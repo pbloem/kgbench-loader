@@ -29,8 +29,9 @@ class Data:
 
     """
 
+    def __init__(self, dir, final=False, use_torch=False, catval=False, name="unnamed_dataset"):
 
-    def __init__(self, dir, final=False, use_torch=False, catval=False):
+        self.name = name
 
         self.triples = None
         """ The edges of the knowledge graph (the triples), represented by their integer indices. A (m, 3) numpy 
@@ -197,6 +198,129 @@ class Data:
 
         return self._datatypes[i]
 
+    def pyg(self, add_inverse=True):
+        """
+        Returns a PyG data object KG
+        :param add_inverse: If True, adds inverse edges for all edges in the graph, with a associated inverse relation types
+                            (same as the default behaviour in PyG for RDF graphs)
+        :return: PyG data object
+        """
+        assert self.torch, 'Data must be loaded with torch=True to generate PyG data object'
+
+        try:
+            # Optional import
+            from torch_geometric.data import Data as PygData
+        except:
+            raise Exception('Pytorch geometric does not appear to be installed. Try `pip install pyg` to install it.')
+
+        train_idx, train_y = self.training[:, 0], self.training[:, 1]
+        test_idx, test_y = self.withheld[:, 0], self.withheld[:, 1]
+
+        if add_inverse:
+            edge_type = torch.hstack((2 * self.triples[:, 1].T, 2 * self.triples[:, 1].T + 1))
+            edge_index = torch.hstack((self.triples[:, [0, 2]].T, self.triples[:, [2, 0]].T))
+        else:
+            edge_type = self.triples[:, 1].T
+            edge_index = self.triples[:, [0, 2]].T
+
+        data = PygData(edge_index=edge_index, edge_type=edge_type,
+                train_idx=train_idx, train_y=train_y, test_idx=test_idx,
+                test_y=test_y, num_nodes=self.num_entities)
+
+        data.num_relations = 2 * self.num_relations if add_inverse else self.num_relations
+
+        return data
+
+    def dgl(self, training=True, verbose=False):
+        """
+        Returns a [DGL](http://dgl.ai) data object.
+
+        The returned graph is a HeteroGraph object, with a uniform node type 'resource'. In RDF, type information is
+        encoded in the graph with the `rdf:type` relation, not treated as aspecial node property.
+
+        The `label` property extends to all nodes, with the label -1 for unlabeled nodes.
+
+        The train/withheld split is indicated by the 'training_mask' and 'withheld_mask' properties on the nodes. The
+        withheld_mask contains either the validation data or the test data, depending on how the original data object is
+        loaded.
+
+        :return: A DGL Dataset object representing this KGBench task.
+        """
+        RES = 'resource' # type for all nodes
+
+        assert self.torch, 'Data must be loaded with torch=True to generate DGL data object'
+
+        # Dynamically import DGL
+        try:
+            import dgl
+            from dgl.data import DGLDataset
+            from dgl import DGLGraph
+        except:
+            raise Exception('DGL does not appear to be installed. Try `pip install dgl` to install it. See http://dgl.ai for more information.')
+
+        # Define a DGL dataset class locally to keep the DGL stuff contained to one function.
+        class KGBDataset(DGLDataset):
+
+            def __init__(self, data : Data, training = True):
+
+                super().__init__(name="kgb_" + data.name)
+
+                self.data = data
+                self.training = training
+
+                self.predict_category = RES
+                self.num_classes = data.num_classes
+
+                if verbose:
+                    print("Total #nodes:", g.number_of_nodes())
+                    print("Total #edges:", g.number_of_edges())
+
+                # Create heterogeneous graph
+                hgdict = {}
+
+                for relid, relname in enumerate(data.i2r):
+
+                    # triples with this relation
+                    rtriples = data.triples[data.triples[:, 1] == relid]
+                    subjects, objects = rtriples[:, 0], rtriples[:, 2]
+
+                    hgdict[(RES, relname, RES)] = ('coo', (subjects, objects))
+
+                self.graph = dgl.heterograph(hgdict)
+
+                # Assign nodes to training and withheld
+                n_nodes = self.graph.num_nodes()
+                training_mask = torch.zeros(n_nodes, dtype=torch.bool)
+                withheld_mask = torch.zeros(n_nodes, dtype=torch.bool)
+                # -- withheld is either validation or test, depending on how the data is loaded
+
+                training_mask[data.training[:, 0]] = True
+                withheld_mask[data.withheld[:, 0]] = True
+
+                self.graph.nodes[RES].data['training_mask'] = training_mask
+                self.graph.nodes[RES].data['withheld_mask'] = withheld_mask
+
+                # Assign labels to nodes
+                labels = torch.full(fill_value=-1, size=(n_nodes,) , dtype=torch.long)
+
+                labels[self.data.training[:, 0]] = self.data.training[:, 1]
+                labels[self.data.withheld[:, 0]] = self.data.withheld[:, 1]
+
+                self.graph.nodes[RES].data['label'] = labels
+
+            def process(self):
+                pass
+
+            def __getitem__(self, i):
+
+                return self.graph
+
+            def __len__(self):
+                return 1
+
+        return KGBDataset(data=self, training=training)
+
+
 SPECIAL = {'iri':'0', 'blank_node':'1', 'none':'2'}
 def datatype_key(string):
     """
@@ -255,7 +379,7 @@ def load(name, final=False, torch=False, prune_dist=None):
 
 
         tic()
-        data = Data(here(f'../datasets/{name}.tgz'), final=final, use_torch=torch)
+        data = Data(here(f'../datasets/{name}.tgz'), final=final, use_torch=torch, name=name)
         print(f'loaded data {name} ({toc():.4}s).')
 
     else:
@@ -308,6 +432,8 @@ def micro(final=True, use_torch=False):
         data.triples  = torch.from_numpy(data.triples)
         data.training = torch.from_numpy(data.training)
         data.withheld = torch.from_numpy(data.withheld)
+
+    data.name="micro"
 
     return data
 
@@ -518,26 +644,52 @@ def group(data : Data):
 
     return nw
 
+# def fastload(file):
+#     """
+#     Quickly load an (m, 3) matrix of integer triples
+#     :param input:
+#     :return:
+#     """
+#
+#     # count the number of lines
+#     with gzip.open(file, 'rt') as input:
+#         lines = 0
+#         for line in input:
+#             print(line)
+#             lines += 1
+#
+#     # prepare a zero metrix
+#     result = np.zeros((lines, 3), dtype=np.int)
+#
+#     # fill the zero matrix with the values from the file
+#     with gzip.open(file, 'rt') as input:
+#         i = 0
+#         for i, line in enumerate(input):
+#
+#             print(i, line)
+#
+#             s, p, o = str(line).split(',')
+#             s, p, o = int(s), int(p), int(o)
+#             result[i, :] = (s, p, o)
+#
+#             i += 1
+#
+#     return result
+
 def fastload(file):
     """
     Quickly load an (m, 3) matrix of integer triples
     :param input:
     :return:
     """
-    # count the number of lines
-    with gzip.open(file, 'rt') as input:
-        lines = 0
-        for _ in input:
-            lines += 1
 
-    # prepare a zero metrix
-    result = np.zeros((lines, 3), dtype=np.int)
+    triples = []
 
-    # fill the zero matrix with the values from the file
     with gzip.open(file, 'rt') as input:
-        for i, line in enumerate(input):
+        for line in input:
+
             s, p, o = str(line).split(',')
             s, p, o = int(s), int(p), int(o)
-            result[i, :] = (s, p, o)
+            triples.append( (s, p, o) )
 
-    return result
+    return np.asarray(triples)

@@ -16,7 +16,9 @@ setup(
         "scikit-image",
         "rdflib",
         "hdt",
-        "wget"
+        "wget",
+        # "dgl",
+        # "pyg"
     ],
     zip_safe=False
 )
