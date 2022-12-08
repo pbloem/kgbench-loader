@@ -15,7 +15,6 @@ setup(
         "Pillow",
         "scikit-image",
         "rdflib",
-        "hdt",
         "wget",
         # "dgl",
         # "pyg"
