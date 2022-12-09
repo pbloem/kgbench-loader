@@ -231,6 +231,51 @@ class Data:
 
         return data
 
+    def get_strings_batch(self, idx, dtype):
+        """
+        Retrieves a list of all string representations of a given datatype in order in a batch by indices as idx
+
+        :param: dtype:
+        param: idx:
+        :return:
+        """
+        keys = list(self.e2i.keys())
+        key = [keys[i] for i in idx]
+
+        return [key[i][0] for i in range(0, len(key)) if key[i][1] == dtype]
+
+    def get_images_batch(self, idx, dtype='http://kgbench.info/dt#base64Image'):
+        """
+        Retrieves the entities in batched with the given datatype as PIL image objects and indices as idx.
+
+        :param dtype:
+        :param idx:
+        :return: A list of PIL image objects
+        """
+        from PIL import Image
+        res = []
+
+        # Take in base64 string and return cv image
+        num_noparse = 0
+        for b64 in self.get_strings_batch(idx, dtype):
+            try:
+                imgdata = base64.urlsafe_b64decode(b64)
+            except:
+                print(f'Could not decode b64 string {b64}')
+                sys.exit()
+            try:
+                res.append(Image.open(io.BytesIO(imgdata)))
+            except:
+                num_noparse += 1
+                res.append(Image.new('RGB', (1, 1)))
+                # -- If the image can't be parsed, we insert a 1x1 black image
+
+        if num_noparse > 0:
+            warnings.warn(
+                f'There were {num_noparse} images that couldn\'t be parsed. These have been replaced by black images.')
+
+        return res
+
     def dgl(self, training=True, verbose=False):
         """
         Returns a [DGL](http://dgl.ai) data object.
