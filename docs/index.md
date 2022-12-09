@@ -13,7 +13,7 @@ We offer a set of node classification benchmark tasks on relational data, with t
 
 ## Installation
 
-Download or clone the repository https://github.com/pbloem/kgbench-loader. In the root directory (where `setup.py` is located), run 
+Download or clone [the repository](https://github.com/pbloem/kgbench-loader). In the root directory (where `setup.py` is located), run 
 ```
 pip install . 
 ```
