@@ -13,12 +13,12 @@ We offer a set of node classification benchmark tasks on relational data, with t
 
 ## Installation
 
-Download or clone the repository https://github.com/pbloem/kgbench-loader. In the root directory (where `setup.py` is located), run 
+Download or clone [the repository](https://github.com/pbloem/kgbench-loader). In the root directory (where `setup.py` is located), run 
 ```
 pip install . 
 ```
 
-_Please do not use the `kgbench-data` repository, only use the `kgbench-loader`. The former should only be used to study how the data was created._
+_Please do not use the `kgbench-data` repository, only use the `kgbench-loader`. The former should only be used to study how the data was created, or to load the data in a non-python environment._
 
 ## Loading data in python
 
@@ -62,7 +62,7 @@ Three example baselines are implemented in the directory `experiments`. These sh
 
 ## Loading data in other languages
 
-If you aren't working in python, you'll have to load the data yourself. This can be done with any standard CSV loader.
+If you aren't working in python, you'll have to load [the data](https://github.com/pbloem/kgbench-data/tree/main/datasets) yourself. This can be done with any standard CSV loader.
 
 Each datasets is laid out in the following files:
  * `triples.int.csv.gz` A gzipped CSV file of the triples represented as integers. Each node in the graph and each relation is assigned an integer. Since, in many case, you won't need more than the node and relation identites, this file is all you need to load the graph. Note that this CSV file has no headers.
