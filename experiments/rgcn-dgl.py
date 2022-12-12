@@ -31,7 +31,7 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, h=16, num_bases=40):
     # print(g.nodes)
     # print(type(train_mask), train_mask.size())
 
-    dataset = kgb.load(name=name, torch=True, final=final).dgl()
+    dataset = kgb.load(name=name, torch=True, final=final).dgl(to32=True)
 
     g = dataset[0].int()
 

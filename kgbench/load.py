@@ -276,7 +276,7 @@ class Data:
 
         return res
 
-    def dgl(self, training=True, verbose=False):
+    def dgl(self, training=True, verbose=False, to32=False):
         """
         Returns a [DGL](http://dgl.ai) data object.
 
@@ -323,10 +323,14 @@ class Data:
                 # Create heterogeneous graph
                 hgdict = {}
 
+                triples = data.triples.to(torch.int32) if to32 else data.triples
+                # print(self.data.triples.dtype)
+                # exit()
+
                 for relid, relname in enumerate(data.i2r):
 
                     # triples with this relation
-                    rtriples = data.triples[data.triples[:, 1] == relid]
+                    rtriples = triples[triples[:, 1] == relid]
                     subjects, objects = rtriples[:, 0], rtriples[:, 2]
 
                     hgdict[(RES, relname, RES)] = ('coo', (subjects, objects))
