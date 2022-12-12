@@ -306,7 +306,7 @@ class Data:
         # Define a DGL dataset class locally to keep the DGL stuff contained to one function.
         class KGBDataset(DGLDataset):
 
-            def __init__(self, data : Data, training = True, safestring=False):
+            def __init__(self, data : Data, training = True, safestrings=False):
 
                 super().__init__(name="kgb_" + data.name)
 
@@ -328,8 +328,10 @@ class Data:
                 # exit()
 
                 for relid, relname in enumerate(data.i2r):
-                    relname = rename.replace('.', '')
-                    relname = rename.replace('/', '')
+
+                    if safestrings:
+                        relname = rename.replace('.', '')
+                        relname = rename.replace('/', '')
 
                     # triples with this relation
                     rtriples = triples[triples[:, 1] == relid]
