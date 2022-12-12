@@ -330,8 +330,8 @@ class Data:
                 for relid, relname in enumerate(data.i2r):
 
                     if safestrings:
-                        relname = rename.replace('.', '')
-                        relname = rename.replace('/', '')
+                        relname = relname.replace('.', '')
+                        relname = relname.replace('/', '')
 
                     # triples with this relation
                     rtriples = triples[triples[:, 1] == relid]
