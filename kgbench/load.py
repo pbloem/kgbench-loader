@@ -355,7 +355,7 @@ class Data:
                 labels[self.data.training[:, 0]] = self.data.training[:, 1]
                 labels[self.data.withheld[:, 0]] = self.data.withheld[:, 1]
 
-                self.graph.nodes[RES].data['label'] = labels
+                self.graph.nodes[RES].data['label'] = labels.to(torch.int32) if to32 else labels
 
             def process(self):
                 pass
