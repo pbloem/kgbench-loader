@@ -276,7 +276,7 @@ class Data:
 
         return res
 
-    def dgl(self, training=True, verbose=False, to32=False):
+    def dgl(self, training=True, verbose=False, to32=False, safestrings=False):
         """
         Returns a [DGL](http://dgl.ai) data object.
 
@@ -306,7 +306,7 @@ class Data:
         # Define a DGL dataset class locally to keep the DGL stuff contained to one function.
         class KGBDataset(DGLDataset):
 
-            def __init__(self, data : Data, training = True, safestrings=False):
+            def __init__(self, data : Data, training = True):
 
                 super().__init__(name="kgb_" + data.name)
 
