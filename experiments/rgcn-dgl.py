@@ -17,7 +17,7 @@ Use the DGL loader, and use DGL to run a (full batch) R-GCN.
 Code adapted from the `entity.py` R-GCN example in DGL: https://github.com/dmlc/dgl/tree/master/examples/pytorch/rgcn
 """
 
-def go(name='aifb', final=False, lr=0.01, wd=5e-3, h=16, num_bases=40):
+def go(name='aifb', final=False, lr=0.01, wd=5e-3, in_dim=256, h=16, num_bases=40, prune=False):
 
     # dataset = dgl.data.rdf.AIFBDataset()
     # g = dataset[0]
@@ -31,7 +31,7 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, h=16, num_bases=40):
     # print(g.nodes)
     # print(type(train_mask), train_mask.size())
 
-    dataset = kgb.load(name=name, torch=True, final=final).dgl(to32=True)
+    dataset = kgb.load(name=name, torch=True, final=final, prune_dist=2 if prune else None).dgl(to32=True)
 
     g = dataset[0].int()
 
@@ -67,7 +67,7 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, h=16, num_bases=40):
     #    >>> target_idx = node_ids[g.ndata[dgl.NTYPE] == category_id]
     #    We don't have a particular type for target nodes.
 
-    model = RGCN(num_nodes=g.num_nodes(), h_dim=h, out_dim=dataset.num_classes, num_rels=num_rels, num_bases=num_bases)
+    model = RGCN(num_nodes=g.num_nodes(), in_dim=in_dim, h_dim=h, out_dim=dataset.num_classes, num_rels=num_rels, num_bases=num_bases)
 
     if torch.cuda.is_available():
         model.to('cuda')
@@ -77,7 +77,7 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, h=16, num_bases=40):
     model.train()
     for epoch in range(50):
         logits = model(g)[training_idx].squeeze(1)
-        loss = F.cross_entropy(logits, training_labels)
+        loss = F.cross_entropy(logits, training_labels.to(torch.long))
 
         optimizer.zero_grad()
         loss.backward()
@@ -90,14 +90,17 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, h=16, num_bases=40):
     print("Test accuracy {:.4f}".format(acc))
 
 class RGCN(nn.Module):
+    """
+    NB: This is an _embedding_ RGCN. It's slightly different from the classic RGCN in rgcn.py.
+    """
 
-    def __init__(self, num_nodes, h_dim, out_dim, num_rels, num_bases):
+    def __init__(self, num_nodes, in_dim, h_dim, out_dim, num_rels, num_bases):
 
         super().__init__()
 
-        self.emb = nn.Embedding(num_nodes, h_dim)
+        self.emb = nn.Embedding(num_nodes, in_dim)
         # two-layer RGCN
-        self.conv1 = RelGraphConv(h_dim, h_dim, num_rels, regularizer='basis', num_bases=num_bases, self_loop=True)
+        self.conv1 = RelGraphConv(in_dim, h_dim, num_rels, regularizer='basis', num_bases=num_bases, self_loop=True)
         self.conv2 = RelGraphConv(h_dim, out_dim, num_rels, regularizer='basis', num_bases=num_bases, self_loop=True)
 
     def forward(self, g):

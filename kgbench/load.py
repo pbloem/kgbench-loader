@@ -324,8 +324,6 @@ class Data:
                 hgdict = {}
 
                 triples = data.triples.to(torch.int32) if to32 else data.triples
-                # print(self.data.triples.dtype)
-                # exit()
 
                 for relid, relname in enumerate(data.i2r):
 
