@@ -27,8 +27,8 @@ def enrich(triples : torch.Tensor, n : int, r: int):
         torch.arange(n, dtype=torch.long, device=d(cuda))[:, None],
     ], dim=1)
 
-    # return torch.cat([triples, inverses, selfloops], dim=0)
-    return torch.cat([triples], dim=0)
+    return torch.cat([triples, inverses, selfloops], dim=0)
+    # return torch.cat([triples], dim=0)
 
 def sum_sparse(indices, values, size, row=True):
     """
