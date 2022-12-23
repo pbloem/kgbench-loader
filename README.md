@@ -95,7 +95,7 @@ The following benchmark datasets are available. See the paper for more extensive
 The following datasets are available for testing:
 
  * `micro` Minute dataset of 5 nodes. Useful for manually analyzing algorithm behavior.
- * Small, real-world datasets. The test sets of these are too small to make them very valuable benchmark, but they are good for quick sanity checks, and to compare against existing literature. When evaluating on the test set, these should be loaded with `include_val=True`.
+ * Small, real-world datasets. The test sets of these are too small to make them very valuable benchmark, but they are good for quick sanity checks, and to compare against existing literature. When evaluating on the test set, these should be loaded with `include_val=True`. The datatypes of literals are currently not included for these.
    * `aifb` 
    * `mutag`
    * `bgs` NB: Due to a change in loading code, this dataset is loaded with 916337 edges rather than the 916199 reported in the literature (most likely the extra edges were skipped in earlier versions).
