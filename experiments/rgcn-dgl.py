@@ -17,7 +17,7 @@ Use the DGL loader, and use DGL to run a (full batch) R-GCN.
 Code adapted from the `entity.py` R-GCN example in DGL: https://github.com/dmlc/dgl/tree/master/examples/pytorch/rgcn
 """
 
-def go(name='aifb', final=False, lr=0.01, wd=5e-3, in_dim=256, h=16, num_bases=40, prune=False):
+def go(name='aifb', final=False, lr=0.01, wd=5e-3, in_dim=256, h=16, num_bases=40, prune=False, reg='basis'):
 
     # dataset = dgl.data.rdf.AIFBDataset()
     # g = dataset[0]
@@ -52,7 +52,7 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, in_dim=256, h=16, num_bases=4
     # -- note the use of training/withheld rather than train/test
 
     for cetype in g.canonical_etypes:
-        g.edges[cetype].data['norm'] = dgl.norm_by_dst(g, cetype).unsqueeze(1)
+        g.edges[cetype].data['norm'] = dgl.norm_by_dst(g, cetype).unsqueeze(1) * 0.0 + 1.0
 
     g = dgl.to_homogeneous(g, edata=['norm'])
 
@@ -67,7 +67,7 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, in_dim=256, h=16, num_bases=4
     #    >>> target_idx = node_ids[g.ndata[dgl.NTYPE] == category_id]
     #    We don't have a particular type for target nodes.
 
-    model = RGCN(num_nodes=g.num_nodes(), in_dim=in_dim, h_dim=h, out_dim=dataset.num_classes, num_rels=num_rels, num_bases=num_bases)
+    model = RGCN(num_nodes=g.num_nodes(), in_dim=in_dim, h_dim=h, out_dim=dataset.num_classes, num_rels=num_rels, num_bases=num_bases, reg=reg)
 
     if torch.cuda.is_available():
         model.to('cuda')
@@ -86,29 +86,34 @@ def go(name='aifb', final=False, lr=0.01, wd=5e-3, in_dim=256, h=16, num_bases=4
         acc = (logits.argmax(dim=1) == training_labels).sum() / training_labels.size(0)
         print(f'Epoch {epoch:05d} | Loss {loss.item():.4f} | Train Accuracy {acc:.4f} ')
 
-    acc = evaluate(g, withheld_idx, withheld_labels, model)
-    print("Test accuracy {:.4f}".format(acc))
+        acc = evaluate(g, withheld_idx, withheld_labels, model)
+        print("         Test accuracy {:.4f}".format(acc))
 
 class RGCN(nn.Module):
     """
     NB: This is an _embedding_ RGCN. It's slightly different from the classic RGCN in rgcn.py.
     """
 
-    def __init__(self, num_nodes, in_dim, h_dim, out_dim, num_rels, num_bases):
+    def __init__(self, num_nodes, in_dim, h_dim, out_dim, num_rels, num_bases, reg):
+        reg = None if reg == 'none' else reg
 
         super().__init__()
 
         self.emb = nn.Embedding(num_nodes, in_dim)
+        # nn.init.kaiming_normal_(self.emb.weight, mode='fan_in')
+
         # two-layer RGCN
-        self.conv1 = RelGraphConv(in_dim, h_dim, num_rels, regularizer='basis', num_bases=num_bases, self_loop=True)
-        self.conv2 = RelGraphConv(h_dim, out_dim, num_rels, regularizer='basis', num_bases=num_bases, self_loop=True)
+        self.conv1 = RelGraphConv(in_dim, h_dim, num_rels, regularizer=reg, num_bases=num_bases, self_loop=False)
+        self.conv2 = RelGraphConv(h_dim, out_dim, num_rels, regularizer=reg, num_bases=num_bases, self_loop=False)
 
     def forward(self, g):
 
         x = self.emb.weight
+
         h = F.relu(self.conv1(g, x, g.edata[dgl.ETYPE], g.edata['norm']))
 
         h = self.conv2(g, h, g.edata[dgl.ETYPE], g.edata['norm'])
+
         return h
 
 def evaluate(g, withheld_idx, labels, model):

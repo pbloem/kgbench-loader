@@ -93,7 +93,17 @@ class Data:
             if final and catval:
                 self.training = np.concatenate([train, val], axis=0)
                 self.withheld = test
+
+                if name not in ['aifb', 'mutag', 'bgs', 'am']:
+                    warnings.warn('Adding the validation set to the training data. Note that this is not the correct '
+                                  'way to load the KGBench data, and will lead to inflated performance. For AIFB, '
+                                  'MUTAG, BGS and AM, this is the correct way to load the data.')
             elif final:
+                if name in ['aifb', 'mutag', 'bgs', 'am']:
+                    warnings.warn('The validation data is not added to the training data. For AIFB, MUTAG, BGS and AM, '
+                                  'the correct evaluation is to combine train and validation for the final evaluation run.'
+                                  'Set include_val to True when loading the data.')
+
                 self.training = train
                 self.withheld = test
             else:
@@ -387,13 +397,19 @@ def datatype_key(string):
 
     return '9' + string
 
-def load(name, final=False, torch=False, prune_dist=None):
+def load(name, final=False, torch=False, prune_dist=None, include_val=False):
     """
     Returns the requested dataset.
 
     :param name: One of the available datasets
     :param final: Loads the test/train split instead of the validation train split. In this case the training data
     consists of both training and validation.
+    :param prune_dist: Removes any nodes in the graph that are further away from any target node than this value. This is
+    helpful for models like RGCNs that can only see a limited distance from the target nodes. It saves memory to prune
+    the part of the graph that doesn't affect the predictions.
+    :param torch: Load the dataset as pytorch tensors rather than numpy tensors.
+    :param include_val: If `final == True`, this adds the validation data to the training data. this is not the correct
+    way to load the kgbench datasets, but it is correct for older datasets like AIFB, MUTAG, BGS and AM.
     :return: A pair (triples, meta). `triples` is a numpy 2d array of datatype uint32 contianing integer-encoded
     triples. `meta` is an object of metadata containing the following fields:
      * e: The number of entities
@@ -405,7 +421,7 @@ def load(name, final=False, torch=False, prune_dist=None):
         return micro(final, torch)
         # -- a miniature dataset for unit testing
 
-    if name in ['aifb', 'am1k', 'amplus', 'dblp', 'mdgenre', 'mdgender', 'dmgfull', 'dmg777k']:
+    if name in URLS.keys():
 
         # ensure data dir exists
         Path(here('../datasets/')).mkdir(parents=True, exist_ok=True)
@@ -430,7 +446,7 @@ def load(name, final=False, torch=False, prune_dist=None):
 
 
         tic()
-        data = Data(here(f'../datasets/{name}.tgz'), final=final, use_torch=torch, name=name)
+        data = Data(here(f'../datasets/{name}.tgz'), final=final, use_torch=torch, name=name, catval=include_val)
         print(f'loaded data {name} ({toc():.4}s).')
 
     else:
@@ -521,9 +537,9 @@ def load_entities(file):
     assert len(df.columns) == 3, 'Entity file should have three columns (index, datatype and label)'
     assert not df.isnull().any().any(), f'CSV file {file} has missing values'
 
-    idxs = df['index']      .tolist()
+    idxs =   df['index']      .tolist()
     dtypes = df['annotation'] .tolist()
-    labels = df['label']    .tolist()
+    labels = df['label']      .tolist()
 
     ents = zip(labels, dtypes)
 

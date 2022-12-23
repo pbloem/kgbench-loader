@@ -28,7 +28,6 @@ def enrich(triples : torch.Tensor, n : int, r: int):
     ], dim=1)
 
     return torch.cat([triples, inverses, selfloops], dim=0)
-    # return torch.cat([triples], dim=0)
 
 def sum_sparse(indices, values, size, row=True):
     """
@@ -211,7 +210,10 @@ class RGCN(nn.Module):
 
 def go(name='amplus', lr=0.01, wd=0.0, l2=0.0, epochs=50, prune=False, optimizer='adam', final=False, emb=16, bases=None, printnorms=None):
 
-    data = load(name, torch=True, prune_dist=2 if prune else None, final=final)
+    include_val = name in ('aifb','mutag','bgs','am')
+    # -- For these datasets, the validation is added to the training for the final eval.
+
+    data = load(name, torch=True, prune_dist=2 if prune else None, final=final, include_val=include_val)
 
     print(f'{data.triples.size(0)} triples')
     print(f'{data.num_entities} entities')

@@ -92,10 +92,14 @@ The following benchmark datasets are available. See the paper for more extensive
  * `dmg777k` Subset of `dmgfull`
  * `mdgenre` Movie data extracted from Wikidata
  
-The following datasets are available for unit testing:
+The following datasets are available for testing:
 
  * `micro` Minute dataset of 5 nodes. Useful for manually analyzing algorithm behavior.
- * `aifb` Small, real-world dataset. The test set is too small to make this a very valuable benchmark, but good for quick sanity checks.
+ * Small, real-world datasets. The test sets of these are too small to make them very valuable benchmark, but they are good for quick sanity checks, and to compare against existing literature. When evaluating on the test set, these should be loaded with `include_val=True`.
+   * `aifb` 
+   * `mutag`
+   * `bgs` NB: Due to a change in loading code, this dataset is loaded with 916337 edges rather than the 916199 reported in the literature (most likely the extra edges were skipped in earlier versions).
+   * `am` 
  * `mdgender` Large, balanced multimodal dataset with a guaranteed relation between the images and the target class, which a convolutional network can learn. This task is too easy to make for a good evaluation, but it may be helpful in troubleshooting multimodal models. See the broader impact statement in the paper for a discussion on the problems surrounding gender classification.  
 
 ## Datatypes
