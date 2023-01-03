@@ -326,10 +326,6 @@ class Data:
                 self.predict_category = RES
                 self.num_classes = data.num_classes
 
-                if verbose:
-                    print("Total #nodes:", g.number_of_nodes())
-                    print("Total #edges:", g.number_of_edges())
-
                 # Create heterogeneous graph
                 hgdict = {}
 
@@ -348,6 +344,10 @@ class Data:
                     hgdict[(RES, relname, RES)] = ('coo', (subjects, objects))
 
                 self.graph = dgl.heterograph(hgdict)
+
+                if verbose:
+                    print("Total #nodes:", self.graph.number_of_nodes())
+                    print("Total #edges:", self.graph.number_of_edges())
 
                 # Assign nodes to training and withheld
                 n_nodes = self.graph.num_nodes()
