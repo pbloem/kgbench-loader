@@ -449,8 +449,14 @@ def load(name, final=False, torch=False, prune_dist=None, include_val=False):
         data = Data(here(f'../datasets/{name}.tgz'), final=final, use_torch=torch, name=name, catval=include_val)
         print(f'loaded data {name} ({toc():.4}s).')
 
+    elif os.path.isfile(name):
+
+        tic()
+        data = Data(here(name), final=final, use_torch=torch, name=name, catval=include_val)
+        print(f'loaded data {name} ({toc():.4}s).')
+
     else:
-        raise Exception(f'Dataset {name} not recognized.')
+        raise Exception(f'Argument {name} does refer to one of the included datasets and does not seem to be a file on the filesystem.')
 
     if prune_dist is not None:
         tic()
