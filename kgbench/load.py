@@ -86,9 +86,9 @@ class Data:
             self.num_relations = len(self.i2r)
 
             train, val, test = \
-                np.loadtxt(getfile(dir, 'training.int.csv'),   dtype=np.int, delimiter=',', skiprows=1), \
-                np.loadtxt(getfile(dir, 'validation.int.csv'), dtype=np.int, delimiter=',', skiprows=1), \
-                np.loadtxt(getfile(dir, 'testing.int.csv'),    dtype=np.int, delimiter=',', skiprows=1)
+                np.loadtxt(getfile(dir, 'training.int.csv'),   dtype=np.int32, delimiter=',', skiprows=1), \
+                np.loadtxt(getfile(dir, 'validation.int.csv'), dtype=np.int32, delimiter=',', skiprows=1), \
+                np.loadtxt(getfile(dir, 'testing.int.csv'),    dtype=np.int32, delimiter=',', skiprows=1)
 
             if final and catval:
                 self.training = np.concatenate([train, val], axis=0)
@@ -487,17 +487,17 @@ def micro(final=True, use_torch=False):
     data.final = final
     data.triples = np.asarray(
         [[0, 0, 1], [1, 0, 2], [0, 0, 2], [2, 1, 3], [4, 1, 3], [4, 1, 0] ],
-        dtype=np.int
+        dtype=np.int32
     )
 
     data.training = np.asarray(
         [[1, 0], [2, 0]],
-        dtype=np.int
+        dtype=np.int32
     )
 
     data.withheld = np.asarray(
         [[3, 1], [3, 1]],
-        dtype=np.int
+        dtype=np.int32
     )
 
     data.torch = use_torch
