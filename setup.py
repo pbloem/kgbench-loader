@@ -16,6 +16,7 @@ setup(
         "scikit-image",
         "rdflib",
         "wget",
+        "fire"
         # "dgl",
         # "pyg"
     ],
