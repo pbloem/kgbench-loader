@@ -1,0 +1,26 @@
+[project]
+name = "kgbench-loader"
+version = "0.2.0"
+description = "A set of benchmark datasets for knowledge graph node classification"
+authors = [ {name = "Peter Bloem (Vrije Universiteit)"},
+{name = "Victor de Boer (Vrije Universiteit)"},
+{name = "Xander Wilcke (Vrije Universiteit)"},
+{name = "Lucas van Berkel"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fire>=0.7.0",
+    "numpy>=2.2.6",
+    "pandas>=2.3.0",
+    "pillow>=11.2.1",
+    "rdflib>=7.1.4",
+    "scikit-image>=0.25.2",
+    "torch>=2.7.1",
+    "torchvision>=0.22.1",
+    "wget>=3.2",
+]
+[tool.setuptools]
+packages = ["kgbench"]
+
+[project.urls]
+Homepage = "https://kgbench.info"
