@@ -1,3 +1,5 @@
+**Please don't clone this repository if you just want to use the `kgbench` data. For that, see [kgbench-loader](https://github.com/pbloem/kgbench-loader).**
+
 # kgbench
 
 A set of benchmark repositories for node classification on knowledge graphs. Paper:
